@@ -4,8 +4,9 @@ import argparse
 import sys
 from pathlib import Path
 from typing import Sequence
+from urllib.parse import unquote, urlsplit
 
-from .convert import convert_dir, convert_file
+from .convert import _is_http_url, convert_dir, convert_file
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -19,6 +20,14 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     src_path = Path(args.src)
     dest_path = Path(args.dest)
+
+    if _is_http_url(args.src):
+        url_path = unquote(urlsplit(args.src).path).rstrip("/")
+        filename = Path(url_path).name or "index"
+        if dest_path.is_dir() or dest_path.suffix == "":
+            dest_path = dest_path / f"{Path(filename).stem}.md"
+        convert_file(args.src, dest_path)
+        return 0
 
     if src_path.is_file():
         if dest_path.is_dir() or dest_path.suffix == "":

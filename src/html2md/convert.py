@@ -4,12 +4,37 @@ import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Iterable, List, Tuple, Union
+from urllib.parse import urlsplit
+from urllib.request import Request, urlopen
 
 from pyhtml2md import Converter, Options
 
 from .cleaning import clean_html, decode_html, finalize_markdown
 
 PathLike = Union[str, Path]
+_HTTP_TIMEOUT = 30
+
+
+def _is_http_url(value: str) -> bool:
+    parsed = urlsplit(value)
+    return parsed.scheme.lower() in {"http", "https"} and bool(parsed.netloc)
+
+
+def _read_html_source(source: PathLike) -> bytes:
+    source_text = os.fspath(source)
+    parsed = urlsplit(source_text)
+
+    if parsed.scheme.lower() in {"http", "https"}:
+        if not parsed.netloc:
+            raise ValueError(f"Invalid webpage URL: {source_text}")
+        request = Request(source_text, headers={"User-Agent": "html2md/0.1.0"})
+        with urlopen(request, timeout=_HTTP_TIMEOUT) as response:
+            return response.read()
+
+    html_path = Path(source_text)
+    if not html_path.exists():
+        raise FileNotFoundError(f"HTML file not found: {html_path}")
+    return html_path.read_bytes()
 
 
 def _iter_html_files(src_path: Path, recursive: bool = False) -> Iterable[Path]:
@@ -18,12 +43,8 @@ def _iter_html_files(src_path: Path, recursive: bool = False) -> Iterable[Path]:
 
 
 def convert_html_file(html_file: PathLike) -> str:
-    """Read an HTML file and return its Markdown content."""
-    html_path = Path(html_file)
-    if not html_path.exists():
-        raise FileNotFoundError(f"HTML file not found: {html_path}")
-
-    html_content, blocks = clean_html(decode_html(html_path.read_bytes()))
+    """Read a local HTML file or HTTP(S) webpage and return its Markdown content."""
+    html_content, blocks = clean_html(decode_html(_read_html_source(html_file)))
 
     options = Options()
     options.splitLines = False
@@ -34,10 +55,9 @@ def convert_html_file(html_file: PathLike) -> str:
 
 def convert_file(src_file: PathLike, dest_file: PathLike) -> Path:
     """Convert a single HTML file into a Markdown file."""
-    src_path = Path(src_file)
     dest_path = Path(dest_file)
 
-    markdown = convert_html_file(src_path)
+    markdown = convert_html_file(src_file)
     dest_path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = dest_path.with_name(dest_path.name + ".tmp")
     tmp_path.write_text(markdown, encoding="utf-8")
