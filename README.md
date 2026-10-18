@@ -5,6 +5,7 @@ A lightweight utility for converting HTML files into Markdown.
 ## Features
 
 - convert a single HTML file to Markdown
+- convert a webpage from an HTTP(S) URL to Markdown
 - convert every HTML file in a directory
 - optionally recurse into subdirectories
 - works as a CLI or Python API
@@ -24,6 +25,7 @@ python3 -m pip install -e .
 from html2md import convert_html_file, convert_file, convert_dir
 
 markdown = convert_html_file("example.html")
+webpage_markdown = convert_html_file("https://example.com/article")
 convert_file("example.html", "example.md")
 converted, failed = convert_dir("pages", "markdown", recursive=True)  # failures are collected, not raised
 ```
@@ -32,6 +34,7 @@ converted, failed = convert_dir("pages", "markdown", recursive=True)  # failures
 
 ```bash
 html2md input.html output.md
+html2md https://example.com/article.md
 html2md input_dir output_dir
 html2md input_dir output_dir --recursive --workers 4
 ```
