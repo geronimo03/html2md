@@ -2,6 +2,22 @@ import html2md
 from html2md import convert_dir, convert_file, convert_html_file
 
 
+def test_convert_html_file_loads_an_http_webpage(monkeypatch):
+    from io import BytesIO
+
+    def fake_urlopen(request, timeout):
+        assert request.full_url == "https://example.com/page"
+        assert request.get_header("User-agent") == "html2md/0.1.0"
+        assert timeout == 30
+        return BytesIO(b"<h1>Web page</h1>")
+
+    monkeypatch.setattr("html2md.convert.urlopen", fake_urlopen)
+
+    result = convert_html_file("https://example.com/page")
+
+    assert "Web page" in result
+
+
 def test_package_exposes_public_api():
     for name in ("convert_html_file", "convert_file", "convert_dir", "main"):
         assert callable(getattr(html2md, name))

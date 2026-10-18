@@ -1,6 +1,19 @@
 from html2md import main
 
 
+def test_webpage_url_writes_to_results_using_url_filename(tmp_path, monkeypatch):
+    from io import BytesIO
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        "html2md.convert.urlopen",
+        lambda request, timeout: BytesIO(b"<h1>Online</h1>"),
+    )
+
+    assert main(["https://example.com/articles/page.html"]) == 0
+    assert "Online" in (tmp_path / "results" / "page.md").read_text(encoding="utf-8")
+
+
 def test_single_file_into_an_existing_directory_uses_the_file_stem(tmp_path):
     src = tmp_path / "page.html"
     src.write_text("<h1>Hi</h1>", encoding="utf-8")
