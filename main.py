@@ -1,21 +1,18 @@
+from __future__ import annotations
+
+import sys
 from pathlib import Path
 
-# argument : /path/to/html_directories/
+ROOT = Path(__file__).resolve().parent
+SRC_DIR = ROOT / "src"
+
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from html2md import main
 
 
-# file to string, string to content
-def convert_html(html) -> str:
+if __name__ == "__main__":
+    raise SystemExit(main())
 
-# file conversion
-def convert_file(src, dest):
 
-# batch conversion
-def convert_dir(src_dir, dest_dir):
-    src_pth = Path(src_dir)
-    dest_pth = Path(dest_dir)
-    dest_pth.mkdir(exists=ok)
-    for src_file in src_dir.glob("*.html"):
-        print(f'Converting {src_file}'}
-        dest_file = dest_pth / src_file.name
-        convert_files(src_file, dest_file)
-        print(f'Converting {dest_file}...DONE'}
